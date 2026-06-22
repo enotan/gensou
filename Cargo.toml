@@ -1,0 +1,13 @@
+[package]
+name = "gensou"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+smithay = { git = "https://github.com/Smithay/smithay.git", rev = "3044f07d9ebf9e1e8eed8536f58e2069b97cdb54", default-features = false, features = [
+    "backend_winit",
+    "wayland_frontend",
+    "desktop",
+] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
