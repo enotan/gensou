@@ -16,9 +16,10 @@ pub fn init_winit(
     _state: &mut GensouState,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (mut backend, winit) = winit::init::<GlesRenderer>()?;
-    
-    event_loop.handle().insert_source(winit, move |event, _, state| {
-        match event {
+
+    event_loop
+        .handle()
+        .insert_source(winit, move |event, _, state| match event {
             winit::WinitEvent::Redraw => {
                 let size = backend.window_size();
                 let damage = Rectangle::from_size(size);
@@ -30,7 +31,9 @@ pub fn init_winit(
                         return;
                     };
 
-                    let Ok(mut frame) = renderer.render(&mut framebuffer, size, Transform::Flipped180) else {
+                    let Ok(mut frame) =
+                        renderer.render(&mut framebuffer, size, Transform::Flipped180)
+                    else {
                         error!("failed to start winit render pass");
                         state.stop();
                         return;
@@ -60,8 +63,7 @@ pub fn init_winit(
                 state.stop();
             }
             _ => {}
-        }
-    })?;
-    
+        })?;
+
     Ok(())
 }

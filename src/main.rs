@@ -1,16 +1,14 @@
 mod backend;
+mod handlers;
 mod state;
 
-use state::GensouState;
 use backend::winit::init_winit;
+use state::GensouState;
 
+use smithay::reexports::{calloop::EventLoop, wayland_server::Display};
 use std::error::Error;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use smithay::reexports::{
-    calloop::EventLoop,
-    wayland_server::Display,
-};
 
 fn main() -> Result<(), Box<dyn Error>> {
     if let Ok(env_filter) = EnvFilter::try_from_default_env() {
@@ -23,15 +21,34 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut event_loop: EventLoop<GensouState> = EventLoop::try_new()?;
 
-    let _display: Display<GensouState> = Display::new()?;
-    let mut state = GensouState::new(&event_loop);
+    let display: Display<GensouState> = Display::new()?;
+    let mut state = GensouState::new(&mut event_loop, display);
 
     init_winit(&mut event_loop, &mut state)?;
 
-    info!("event loop initialised");
-    info!("state initialised");
+    unsafe {
+        std::env::set_var("WAYLAND_DISPLAY", &state.socket_name);
+    }
 
+    info!(socket = ?state.socket_name, "Wayland socket ready");
+
+    spawn_client();
+
+    info!("entering event loop");
+    
     event_loop.run(None, &mut state, |_| {})?;
 
     Ok(())
+}
+
+fn spawn_client() {
+    let mut args = std::env::args().skip(1);
+    let flag = args.next();
+    let command = args.next();
+
+    if let (Some("-c" | "--command"), Some(command)) = (flag.as_deref(), command) 
+        && let Err(error) = std::process::Command::new(command).spawn()
+    {
+        tracing::warn!(?error, "failed to spawn client");
+    }
 }
