@@ -9,7 +9,10 @@ use smithay::{
     wayland::{
         compositor::{CompositorClientState, CompositorState},
         socket::ListeningSocketSource,
+        shell::xdg::XdgShellState,
+        shm::ShmState,
     },
+    desktop::Window,
 };
 use std::{ffi::OsString, sync::Arc};
 use tracing::{debug, info};
@@ -20,6 +23,9 @@ pub struct GensouState {
     loop_signal: LoopSignal,
     pub compositor_state: CompositorState,
     pub socket_name: OsString,
+    pub xdg_shell_state: XdgShellState,
+    pub windows: Vec<Window>,
+    pub shm_state: ShmState,
 }
 
 impl GensouState {
@@ -28,11 +34,16 @@ impl GensouState {
         let display_handle = display.handle();
         let compositor_state = CompositorState::new::<Self>(&display_handle);
         let socket_name = Self::init_wayland_listener(display, event_loop);
+        let xdg_shell_state = XdgShellState::new::<Self>(&display_handle);
+        let shm_state = ShmState::new::<Self>(&display_handle, vec![]);
 
         Self {
             compositor_state,
             loop_signal: event_loop.get_signal(),
             socket_name,
+            xdg_shell_state,
+            windows: Vec::new(),
+            shm_state,
         }
     }
 
@@ -63,7 +74,9 @@ impl GensouState {
                 Generic::new(display, Interest::READ, Mode::Level),
                 |_, display, state| {
                     unsafe {
-                        display.get_mut().dispatch_clients(state).unwrap();
+                        let display = display.get_mut();
+                        display.dispatch_clients(state).unwrap();
+                        display.flush_clients().unwrap();
                     }
 
                     Ok(PostAction::Continue)

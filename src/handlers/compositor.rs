@@ -1,6 +1,5 @@
 use smithay::{
     backend::renderer::utils::on_commit_buffer_handler,
-    delegate_dispatch2,
     reexports::wayland_server::{Client, protocol::wl_surface::WlSurface},
     wayland::compositor::{CompositorClientState, CompositorHandler, CompositorState},
 };
@@ -25,5 +24,3 @@ impl CompositorHandler for GensouState {
         debug!("surface committed");
     }
 }
-
-delegate_dispatch2!(GensouState);
